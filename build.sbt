@@ -15,10 +15,16 @@ organization := "edu.stthomas.gps"
 scalaVersion := "2.11.12"
 val sparkVersion = "2.1.0"
 
+resolvers ++= Seq(
+  Resolver.mavenLocal,
+  Resolver.file("Local", file(Path.userHome.absolutePath + "/.ivy2/local"))(Resolver.ivyStylePatterns)
+
+)
+
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.0",
   "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
-    "org.dia" %% "scispark" % "1.0")
+  "org.dia" %% "scispark" % "1.0")
 
 assemblyMergeStrategy in assembly := {
   case x if x.startsWith("META-INF") => MergeStrategy.discard // Bumf
