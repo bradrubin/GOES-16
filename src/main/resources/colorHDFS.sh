@@ -15,4 +15,5 @@ spark-submit \
 
 hadoop fs -get colorOut/*.jpg ~/colorOut
 rm color.mp4
-cat ~/colorOut/* | ffmpeg -f image2pipe -r 10 -vcodec mjpeg -i - -vcodec libx264 color.mp4
+
+cat ~/colorOut/*.png | ffmpeg -f image2pipe -r 10 -i - -c:v libx264 -pix_fmt yuv420p color.mp4

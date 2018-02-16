@@ -40,7 +40,7 @@ object ColorHDFS {
         val conf = new Configuration()
         val fs = FileSystem.get(new URI(path), conf)
         val out = fs.create(new Path(path + prefix + fileName))
-        ImageIO.write(image, "jpg", out)
+        ImageIO.write(image, "png", out)
         out.close()
       })
     }
@@ -56,7 +56,7 @@ object ColorHDFS {
       val y = shape(0)
       val bi = new BufferedImage(x, y, BufferedImage.TYPE_INT_RGB)
       bi.setRGB(0, 0, x, y, RGB, 0, x)
-      (ds.datasetName.dropRight(3) + ".jpg", bi)
+      (ds.datasetName.dropRight(3) + ".png", bi)
     }
 
     writeToHDFS(outputRDD, outputDir, "RGB_")
