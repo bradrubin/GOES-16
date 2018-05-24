@@ -2,16 +2,15 @@ package edu.stthomas.gps
 
 import java.awt.Color
 import java.awt.image.BufferedImage
-import java.io.File
 import java.net.URI
 import javax.imageio.ImageIO
 
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
-import org.dia.core.SciSparkContext
+import org.dia.core.{SciDataset, SciSparkContext}
 import org.dia.tensors.AbstractTensor
+import org.apache.hadoop.conf.Configuration
 
 object ColorHDFS {
 
@@ -28,6 +27,8 @@ object ColorHDFS {
     val sparkConf = new SparkConf().setAppName("Spark Pseudocolor Satellite Images")
     val sc = new SparkContext(sparkConf)
     val ssc = new SciSparkContext(sc)
+    val sqlContext = new org.apache.spark.sql.SQLContext(sc)
+    import sqlContext.implicits._
 
     val red = "CMI_C02" // 0.64 um
     val veggie = "CMI_C03" // 0.86 um
@@ -47,7 +48,7 @@ object ColorHDFS {
 
     val inputRDD = ssc.netcdfRandomAccessDatasets(inputDir,
       List("CMI_C01", "CMI_C02", "CMI_C03", "CMI_C13", "goes_imager_projection",
-        "t", "time_bounds", "x", "x_image_bounds", "y", "y_image_bounds"), numPartitions, NaNs = true)
+        "t", "x", "y"), numPartitions, NaNs = true)
 
     val outputRDD: RDD[(String, BufferedImage)] = inputRDD.map { ds =>
       val RGB = calcRGB(ds(red)(), ds(veggie)(), ds(blue)(), ds(cleanIR)())
@@ -60,6 +61,19 @@ object ColorHDFS {
     }
 
     writeToHDFS(outputRDD, outputDir, "RGB_")
+
+    val x: Array[Double] = inputRDD.map(_("x").data()).first
+    val y: Array[Double] = inputRDD.map(_("y").data()).first
+    val date: Int = inputRDD.map(_("t").data()(0)).first.toInt
+    val first: SciDataset = inputRDD.first
+    val satHeight: Float = first("goes_imager_projection").attributes("perspective_point_height").toFloat
+    val satLongitude: Float = first("goes_imager_projection").attributes("longitude_of_projection_origin").toFloat
+    val satSweep: String = first("goes_imager_projection").attributes("sweep_angle_axis")
+
+    val satMetadata = SatMetadata(x, y, satHeight, satLongitude, satSweep, date)
+    val dataRDD = sc.parallelize(Array(satMetadata))
+    val dataDF = dataRDD.toDF
+    dataDF.write.parquet(outputDir + "satMetadata.parquet")
   }
 
   def calcRGB(red: AbstractTensor, veggie: AbstractTensor, blue: AbstractTensor, cleanIR: AbstractTensor): Array[Int] = {

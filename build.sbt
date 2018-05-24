@@ -12,8 +12,8 @@ name := "GOES-16"
 
 organization := "edu.stthomas.gps"
 
-scalaVersion := "2.11.12"
-val sparkVersion = "2.1.0"
+scalaVersion := "2.10.7"
+val sparkVersion = "1.6.0"
 
 resolvers ++= Seq(
   Resolver.mavenLocal,
